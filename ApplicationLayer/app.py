@@ -1,5 +1,6 @@
 from flask import Flask, make_response, request, jsonify, after_this_request, render_template, redirect
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 from parameters import master_username, db_password, endpoint, db_instance_name
 import requests, json
 app = Flask(__name__)
@@ -20,8 +21,31 @@ class TodoTable(db.Model):
     def __repr__(self):
         return f"{self.id}:{self.task}"
 
+
 with app.app_context():
-    db.create_all()
+    # Serialize database initialization across Gunicorn
+    # workers and multiple application EC2 instances.
+    with db.engine.connect() as connection:
+        lock_name = "aws_three_tier_todo_schema_init"
+
+        acquired = connection.execute(
+            text("SELECT GET_LOCK(:name, 60)"),
+            {"name": lock_name}
+        ).scalar()
+
+        if acquired != 1:
+            raise RuntimeError(
+                "Could not acquire database initialization lock"
+            )
+
+        try:
+            db.create_all()
+        finally:
+            connection.execute(
+                text("SELECT RELEASE_LOCK(:name)"),
+                {"name": lock_name}
+            )
+
 
 def create_object(results):
     return {result.id: result.task for result in results}
