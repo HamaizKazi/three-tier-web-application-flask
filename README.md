@@ -1,35 +1,36 @@
-# AWS Three Tier Web Application Flask
+# Flask Three-Tier To-Do Application
 
-## Description
-In today's digital era, web applications have become the backbone of countless businesses and services. Developing a well-structured and scalable web application is essential for providing a seamless user experience. In this workshop, we will guide you through the process of creating a 3-tier web application using Python Flask, a powerful and lightweight web framework. Most of the steps are automated using AWS CloudFormation.
+A customized Flask To-Do application deployed on AWS as part of a Terraform-managed three-tier architecture.
 
-## Audience
-This is an introductory-level workshop meant for individuals who want to gain experience in deploying a 3-tier application using Python Flask. The application developed in this workshop is intended for educational purposes and can serve as an inspiration for production-level applications.
+**Application release:** `v0.1.0`  
+**Verified commit:** `4068d45`
 
-## Workshop Duration
-This workshop is intented to be completed in 3 hours. 
+## Application Structure
 
-## Pre-requisites
+- `WebLayer/` — Flask web interface served by Gunicorn behind Nginx.
+- `ApplicationLayer/` — Flask API, SQLAlchemy models, and MySQL database integration.
+- `ApplicationLayer/parameters.py` — Retrieves runtime database configuration from AWS Systems Manager Parameter Store.
 
-1. Basic experience working with Python Flask. 
-2. An AWS Account, to deploy the infrastructure. You can find more instructions [here](https://aws.amazon.com/free/). 
-3. Basic knowledge with Amazon S3, Amazon EC2, Amazon RDS, AWS CloudFormation, and AWS Systems Manager Parameter Store. 
+## My Changes
 
-## Architecture
+The original application experienced a startup race when multiple Gunicorn workers attempted to create the same MySQL table simultaneously, producing error `1050: Table 'todotable' already exists`.
 
-![Architecture Diagram](https://github.com/aws-samples/three-tier-web-application-flask/blob/main/images/Architecture.png)
+Release `v0.1.0` introduces coordinated database schema initialization. The modified application was deployed through an EC2 Auto Scaling instance refresh and a new application instance was verified to start without the previous duplicate-table error.
 
-## Instructions
-You can follow the instructions [here](https://catalog.us-east-1.prod.workshops.aws/workshops/ca41cbe4-6f9c-4418-a41b-59b05d60eca1/en-US).
+The AWS infrastructure is maintained in a separate Terraform repository.
 
-## Clean-Up
+## Deployment Architecture
 
-In order to avoid incurring any cost and as a general best practice, please follow the steps to [clean up](https://catalog.us-east-1.prod.workshops.aws/workshops/ca41cbe4-6f9c-4418-a41b-59b05d60eca1/en-US/clean-up) the resources.
+Browser → External ALB → Nginx / Flask Web Tier → Internal ALB → Flask API Tier → Amazon RDS MySQL
 
-## Security
+The application tiers run on private EC2 instances in two Availability Zones.
 
-See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
+## Future Work
 
-## License
+Database migration tooling, automated tests, dependency version pinning, and application-level monitoring.
 
-This library is licensed under the MIT-0 License. See the [LICENSE](LICENSE) file.
+## Attribution
+
+Forked from [aws-samples/three-tier-web-application-flask](https://github.com/aws-samples/three-tier-web-application-flask).
+
+Original project license: MIT-0. The LICENSE file is retained.
